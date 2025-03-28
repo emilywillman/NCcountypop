@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>North Carolina County Population</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<style>
+
+    body {
+    margin:0;
+    padding:0;
+    font-family: sans-serif;
+    }
+
+  h1 {
+    position: absolute;
+    left: 50px;
+    top: 10px;
+    padding: 8px 2%;
+    margin: 0;
+    background: #5c87d1cc; 
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 3px;
+    color: #f5f5f5;
+    font-size: 1.5em;
+    z-index: 800;
+    }
+
+  #map {
+    position:absolute;
+    top:0;
+    bottom: 0;
+    width:100%;
+    ;
+   }
+    .custom-popup.leaflet-popup-content-wrapper {
+    background: #f5f5f5; /* Match map legend's background */
+    padding: 5px; 
+    border: 2px solid #5c87d1; /* Border matches circle style */
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Add drop shadow */
+    
+    }
+
+    .custom-popup a {
+    color: #5c87d1; /* Link matches circle styling */
+    text-decoration: none;
+    }   
+
+    .custom-popup a:hover {
+    text-decoration: underline; /* Subtle hover effect */
+    }
+
+    .custom-popup .leaflet-popup-content {
+    font-size: 14px; /* Adjust font size */
+    color: #5c87d1; /* Match your circle colors */
+    }
+
+    section {
+	position: absolute;
+    top: 150px;
+	left: 8px;
+	width: 190px;
+	margin: 20px auto;
+	padding: 5px;
+	background: rgb(245, 245, 245);
+	border: 2px solid #5c87d1;
+	border-radius: 10px;
+	z-index: 800;
+    color: #5c87d1;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    ;
+	}
+
+</style>
+</head>
+
+<body>
+    <div id='map'></div>
+    <h1>North Carolina County Population, 2023</h1>
+    <section>
+		<h2>Proportional Symbol Map</h2>
+
+		<p>This map represents North Carolina county populations in 2023 using scaled circles.</p>
+
+	</section>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+
+<script>
+    var map = L.map('map', {
+        center: [35.9, -79.3],
+        zoom: 7.4
+    });
+
+    var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+	    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+	    subdomains: 'abcd',
+	    maxZoom: 20
+    }).addTo(map);
+
+
+    states = L.geoJson.ajax("assets/data.geojson",{
+        attribution: 'Data: US Census Bureau, Map: Emily Willman',
+        pointToLayer: function (feature, x){
+            return L.circleMarker(x, {
+                color: '#5c87d1',
+                opacity: 1,
+                weight: 2,
+                fillColor: '#9ab9ed',
+                fillOpacity: .6,
+                radius: calcRadius(feature.properties.pop)
+            }).on({
+                        mouseover: function(e){
+                            this.setStyle({color: 'blue',fillColor: 'blue'});
+                                            },
+                        mouseout: function(e){
+                            this.setStyle({color:'#5c87d1', fillColor: '#9ab9ed'});
+                            } })},});
+	
+    var minValue = 3470;
+    var minRadius = 2;
+
+    function calcRadius(val) {
+        return 1.00 * Math.pow(val/minValue,.5) * minRadius;
+        }
+
+    L.control.scale({position: 'topright'}).addTo(map);
+
+    states.addTo(map);
+
+    var legend = L.control({ position: 'bottomleft' });
+
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'legend');
+        var grades = [1200000,3000];
+        var labels = [];
+        var minValue = 3470;
+        var minRadius = 2;
+
+    div.innerHTML += '<h4 style="margin: 0.5; color: #5c87d1; font-size: 1.5em; border-radius: 5px;">County Population</h4>';
+
+    grades.forEach(function (grade) {
+        var radius = 1.00 * Math.pow(grade / minValue, .5) * minRadius;
+
+    labels.push(
+        `<div style="display: flex; align-items: center; margin-bottom: 10px; text-align: center;">
+            <i style="width:${radius * 2}px; height:${radius * 2}px;  opacity: 0.8; background: #9ab9ed; border: 2px solid #5c87d1; border-radius: 50%; display: inline-block; margin-right: 10px; position: relative; bottom: 4px;"></i>
+            <span style="font-size: 1.2em; color: #5c87d1;">${grade}</span>
+        </div>`
+            );
+        });
+        
+    div.innerHTML += labels.join('');
+
+    div.style.backgroundColor = '#f5f5f5';  // White smoke background
+    div.style.color = '#9ab9ed';  // Font color matching the background
+    div.style.padding = '10px';  // Add some padding around the content
+    div.style.border = '2px solid #5c87d1';  // Border color to match background color
+    div.style.boxShadow = '2px 2px 8px rgba(0, 0, 0, 0.3)';  // Small black drop shadow
+    div.style.borderRadius = '10px';  // Rounded corners for a smoother look
+    div.style.fontSize = '1.1em';  // Slightly larger font size for better readability
+
+    return div;
+    };
+
+    legend.addTo(map);
+
+</script>
+</body>
+</html>
